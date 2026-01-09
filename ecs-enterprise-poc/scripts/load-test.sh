@@ -86,17 +86,18 @@ aggressive_load() {
         # Launch concurrent curl requests - each one makes multiple calls
         for ((i=0; i<concurrency; i++)); do
             (
-                # Each process makes 3 rapid requests to amplify load
-                for ((j=0; j<3; j++)); do
-                    curl -s -o /dev/null "$ALB_URL" 2>/dev/null
+                # Each process makes 20 rapid requests to amplify load
+                for ((j=0; j<20; j++)); do
+                    # Hit the API endpoint with CPU-intensive code
+                    curl -s -o /dev/null "$ALB_URL/api/movies" 2>/dev/null
                 done
             ) &
         done
         
-        request_count=$((request_count + concurrency * 3))
+        request_count=$((request_count + concurrency * 20))
         
-        # Wait 0.5 seconds before next batch (faster batching = more load)
-        sleep 0.5
+        # Wait 0.05 seconds before next batch (EXTREME batching = CRUSHING load)
+        sleep 0.05
     done
     
     wait 2>/dev/null || true
@@ -107,37 +108,46 @@ aggressive_load() {
 }
 
 # --- Test 1: Baseline ---
-print_stage "STAGE 1: BASELINE (2 min, low load)"
+print_stage "STAGE 1: BASELINE (1 min, warm up)"
 show_metrics "baseline-start"
-aggressive_load 120 3 "low-load"
-sleep 20
+aggressive_load 60 50 "warm-up-load"
+sleep 15
 show_metrics "baseline-end"
 
 # --- Test 2: Ramp ---
-print_stage "STAGE 2: RAMP UP (3 min, medium load)"
+print_stage "STAGE 2: RAMP UP (2 min, medium load)"
 show_metrics "ramp-start"
-aggressive_load 180 15 "medium-load"
-sleep 30
+aggressive_load 120 150 "medium-load"
+sleep 20
 show_metrics "ramp-end"
 
 # --- Test 3: Peak ---
-print_stage "STAGE 3: PEAK LOAD (3 min, high load)"
+print_stage "STAGE 3: PEAK LOAD (2 min, heavy load)"
 echo -e "${RED}⚠️  GENERATING HEAVY LOAD - EXPECT SCALE-UP${NC}"
 show_metrics "peak-start"
-aggressive_load 180 30 "heavy-load"
-sleep 30
+aggressive_load 120 300 "heavy-load"
+sleep 20
 show_metrics "peak-end"
 
-# --- Test 4: Sustain ---
-print_stage "STAGE 4: SUSTAIN (2 min, maintain load)"
-echo "🔹 Monitoring task stabilization..."
+# --- Test 4: Extreme Peak ---
+print_stage "STAGE 4: EXTREME PEAK (3 min, CRUSHING load)"
+echo -e "${RED}🔥🔥🔥 GENERATING CRUSHING LOAD - APP STRESS TEST 🔥🔥🔥${NC}"
+show_metrics "extreme-start"
+aggressive_load 180 500 "crushing-load"
+sleep 30
+
+show_metrics "extreme-end"
+
+# --- Test 5: Sustain ---
+print_stage "STAGE 5: SUSTAIN (2 min, maintain heavy load)"
+echo "🔹 Maintaining high load to verify stability..."
 show_metrics "sustain-start"
-aggressive_load 120 25 "sustain-load"
+aggressive_load 120 250 "sustain-load"
 sleep 30
 show_metrics "sustain-end"
 
-# --- Test 5: Cool Down ---
-print_stage "STAGE 5: COOL DOWN (drop load, wait for scale-in)"
+# --- Test 6: Cool Down ---
+print_stage "STAGE 6: COOL DOWN (drop load, wait for scale-in)"
 echo "🔹 Dropping traffic - expect tasks to scale down after 5 min"
 show_metrics "cooldown-start"
 aggressive_load 60 2 "light-load"
