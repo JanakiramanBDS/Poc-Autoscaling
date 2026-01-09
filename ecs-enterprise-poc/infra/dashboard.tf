@@ -42,7 +42,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         properties = {
           metrics = [
             ["AWS/ECS", "CPUUtilization", "ClusterName", aws_ecs_cluster.main.name, "ServiceName", aws_ecs_service.main.name, { "color" : "#2ca02c", "label" : "CPU %" }],
-            [".", "MemoryUtilization", ".", ".", ".", ".", { "color" : "#1f77b4", "label" : "Memory %" }]
+            [".", "MemoryUtilization", ".", ".", ".", ".", { "color" : "#656768ff", "label" : "Memory %" }]
           ]
           view  = "timeSeries", region = var.aws_region, stat = "Average", period = 60
           title = "🔥 Resource Saturation (CPU vs RAM)"
@@ -55,10 +55,11 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric", x = 0, y = 12, width = 12, height = 6
         properties = {
           metrics = [
-            ["ECS/ContainerInsights", "TaskCount", "ClusterName", aws_ecs_cluster.main.name, "ServiceName", aws_ecs_service.main.name, { "stat" : "Average", "period" : 60 }]
+            ["AWS/ECS", "RunningTaskCount", "ClusterName", aws_ecs_cluster.main.name, "ServiceName", aws_ecs_service.main.name, { "stat" : "Average", "period" : 60, "label" : "Running Tasks" }]
           ]
           view  = "timeSeries", region = var.aws_region
           title = "💰 Active Fargate Tasks (Auto Scaling Count)"
+          yAxis = { left = { min = 0 } }
         }
       }
     ]
